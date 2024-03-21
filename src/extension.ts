@@ -1,26 +1,72 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
+import * as prettier from "prettier";
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
+// =============== Activate =============== //
+
 export function activate(context: vscode.ExtensionContext) {
+    console.log(`${context.extension.id} is starting...`);
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "to-snippet-body" is now active!');
+    let disposable = vscode.commands.registerCommand("to-snippet-body.convert", async () => {
+        createSnippet();
+    });
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('to-snippet-body.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from to-snippet-body!');
-	});
-
-	context.subscriptions.push(disposable);
+    context.subscriptions.push(disposable);
 }
 
-// This method is called when your extension is deactivated
+// =============== Deactivate =============== //
+
 export function deactivate() {}
+
+// =============== Functions =============== //
+
+/**
+ * Creates snippet from selected text in editor.
+ */
+async function createSnippet() {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+        return;
+    }
+
+    // Editor Selection
+    const selection = editor.selection;
+    const selectedText = editor.document.getText(selection);
+
+    // Editor Settings
+    const indentTabWidth = editor.options.tabSize as number;
+    const indentUseTabs = editor.options.insertSpaces ? false : true;
+
+    // Getting Formatted Snippet
+    const snippetBody = await convertToSnippet(selectedText, indentTabWidth, indentUseTabs);
+
+    // Creating new unsaved document containing created snippet
+    vscode.workspace.openTextDocument({ language: "json", content: snippetBody }).then((doc) => {
+        vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.Active, preserveFocus: true });
+    });
+}
+
+/**
+ * Converts provided text to vscode snippet format.
+ */
+function convertToSnippet(snippetText: string, indentTabWidth: number, indentUseTabs: boolean): Promise<string> {
+    let final: string = `
+	{
+		"Name": {
+			"prefix": ["..."],
+			"body": [
+				${snippetText
+                    .split("\n")
+                    .map((d, index, array) => {
+                        let rawStr = d.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/\t/g, "\\t").replace(/"/g, '\\"');
+                        let comma = index === array.length - 1 ? "" : ",";
+                        return `"${rawStr}"${comma}`;
+                    })
+                    .join("\n")}
+			],
+			"description": "..."
+		}
+	}	
+	`;
+
+    return prettier.format(final, { parser: "json", tabWidth: indentTabWidth, useTabs: indentUseTabs });
+}
