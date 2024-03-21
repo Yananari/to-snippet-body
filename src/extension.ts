@@ -50,8 +50,9 @@ async function createSnippet() {
  */
 function convertToSnippet(snippetText: string, indentTabWidth: number, indentUseTabs: boolean): Promise<string> {
     return new Promise((resolve, reject) => {
-        // let indentRegex = indentUseTabs ? new RegExp(`\\t`, "g") : new RegExp(`\\s{${indentTabWidth}}`, "g");
-        let regexValidation = "(?=[^a-zA-Z0-9])";
+        let tabRegex = new RegExp(`^\\t+`, "gm");
+        let spaceRegex = new RegExp(`^(\\s{${indentTabWidth}})+`, "gm");
+
         let final: string = `
         {
             "Name": {
@@ -60,9 +61,8 @@ function convertToSnippet(snippetText: string, indentTabWidth: number, indentUse
                     ${snippetText
                         .split("\n")
                         .map((line, index, array) => {
-                            let ds = new RegExp(`\\t+{regexValidation}|\\s{${indentTabWidth}}{regexValidation}`);
-                            console.log(ds);
-                            let rawStr = line.replace(new RegExp(ds, "g"), "\t"); //
+                            let rawStr = line.replace(new RegExp(tabRegex, "g"), "\t"); // Tab Indents
+                            rawStr = rawStr.replace(spaceRegex, (match) => `\t`.repeat(match.length / indentTabWidth)); // Space Indents
                             rawStr = escapeString(rawStr);
                             let comma = index === array.length - 1 ? "" : ",";
                             return `"${rawStr}"${comma}`;
