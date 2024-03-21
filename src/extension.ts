@@ -49,24 +49,83 @@ async function createSnippet() {
  * Converts provided text to vscode snippet format.
  */
 function convertToSnippet(snippetText: string, indentTabWidth: number, indentUseTabs: boolean): Promise<string> {
-    let final: string = `
-	{
-		"Name": {
-			"prefix": ["..."],
-			"body": [
-				${snippetText
-                    .split("\n")
-                    .map((d, index, array) => {
-                        let rawStr = d.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/\t/g, "\\t").replace(/"/g, '\\"');
-                        let comma = index === array.length - 1 ? "" : ",";
-                        return `"${rawStr}"${comma}`;
-                    })
-                    .join("\n")}
-			],
-			"description": "..."
-		}
-	}	
-	`;
+    return new Promise((resolve, reject) => {
+        // let indentRegex = indentUseTabs ? new RegExp(`\\t`, "g") : new RegExp(`\\s{${indentTabWidth}}`, "g");
+        let regexValidation = "(?=[^a-zA-Z0-9])";
+        let final: string = `
+        {
+            "Name": {
+                "prefix": ["..."],
+                "body": [
+                    ${snippetText
+                        .split("\n")
+                        .map((line, index, array) => {
+                            let ds = new RegExp(`\\t+{regexValidation}|\\s{${indentTabWidth}}{regexValidation}`);
+                            console.log(ds);
+                            let rawStr = line.replace(new RegExp(ds, "g"), "\t"); //
+                            rawStr = escapeString(rawStr);
+                            let comma = index === array.length - 1 ? "" : ",";
+                            return `"${rawStr}"${comma}`;
+                        })
+                        .join("\n")}
+                ],
+                "description": "..."
+            }
+        }	
+        `;
 
-    return prettier.format(final, { parser: "json", tabWidth: indentTabWidth, useTabs: indentUseTabs });
+        prettier
+            .format(final, { parser: "json", tabWidth: indentTabWidth, useTabs: indentUseTabs })
+            .then((formatted: string) => {
+                resolve(formatted);
+            })
+            .catch((error) => {
+                console.error(error);
+                vscode.window.showErrorMessage("Invalid indext settings! Please fix your settings and try again.");
+                resolve(final);
+            });
+    });
+}
+
+function escapeString(input: string): string {
+    let result = "";
+    for (let i = 0; i < input.length; i++) {
+        const char = input.charAt(i);
+        switch (char) {
+            case "\n":
+                result += "\\n";
+                break;
+            case "\r":
+                result += "\\r";
+                break;
+            case "\t":
+                result += "\\t";
+                break;
+            case "\v":
+                result += "\\v";
+                break;
+            case "\b":
+                result += "\\b";
+                break;
+            case "\f":
+                result += "\\f";
+                break;
+            case "\0":
+                result += "\\0";
+                break;
+            case "'":
+                result += "\\'";
+                break;
+            case '"':
+                result += '\\"';
+                break;
+            case "\\":
+                result += "\\\\";
+                break;
+            default:
+                result += char;
+                break;
+        }
+    }
+    return result;
 }
