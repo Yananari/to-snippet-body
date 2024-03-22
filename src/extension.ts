@@ -1,5 +1,4 @@
 import * as vscode from "vscode";
-import * as prettier from "prettier";
 
 // =============== Activate =============== //
 
@@ -40,9 +39,11 @@ async function createSnippet() {
     const snippetBody = await convertToSnippet(selectedText, indentTabWidth, indentUseTabs);
 
     // Creating new unsaved document containing created snippet
-    vscode.workspace.openTextDocument({ language: "json", content: snippetBody }).then((doc) => {
-        vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.Active, preserveFocus: true });
-    });
+    if (snippetBody) {
+        vscode.workspace.openTextDocument({ language: "json", content: snippetBody }).then((doc) => {
+            vscode.window.showTextDocument(doc, { viewColumn: vscode.ViewColumn.Active, preserveFocus: true });
+        });
+    }
 }
 
 /**
@@ -74,15 +75,18 @@ function convertToSnippet(snippetText: string, indentTabWidth: number, indentUse
         }	
         `;
 
-        prettier
-            .format(final, { parser: "json", tabWidth: indentTabWidth, useTabs: indentUseTabs })
-            .then((formatted: string) => {
-                resolve(formatted);
+        new Promise<string>((resolve, reject) => {
+            const parsedData = JSON.parse(final);
+            const formattedData = JSON.stringify(parsedData, null, indentTabWidth);
+            resolve(formattedData);
+        })
+            .then(async (formattedData) => {
+                resolve(formattedData);
             })
-            .catch((error) => {
-                console.error(error);
-                vscode.window.showErrorMessage("Invalid indext settings! Please fix your settings and try again.");
-                resolve(final);
+            .catch((error: any) => {
+                console.error("Error formatting JSON:", error);
+                vscode.window.showErrorMessage("Error formatting JSON! Check console for more info.");
+                reject();
             });
     });
 }
