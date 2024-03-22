@@ -3,7 +3,7 @@
     "name": "to-snippet-body",
     "displayName": "To Snippet Body",
     "description": "Easy creation of snippets.",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "engines": {
         "vscode": "^1.87.0"
     },
@@ -43,5 +43,8 @@
         "@vscode/test-electron": "^2.3.9",
         "eslint": "^8.56.0",
         "typescript": "^5.3.3"
+    },
+    "dependencies": {
+        "prettier": "^3.2.5"
     }
 }
