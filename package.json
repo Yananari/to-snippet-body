@@ -2,8 +2,8 @@
     "publisher": "Nari",
     "name": "to-snippet-body",
     "displayName": "To Snippet Body",
-    "description": "Easy creation of snippets.",
-    "version": "1.0.3",
+    "description": "Allows to easily convert selected code into a VSCode snippet",
+    "version": "1.0.4",
     "engines": {
         "vscode": "^1.87.0"
     },
